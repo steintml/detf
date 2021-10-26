@@ -39,7 +39,7 @@ contract BassketToken is ERC20, Ownable, ERC20Burnable {
 
     
     
-    constructor() ERC20("Ethereum Bassket Token", "XEB") {
+    constructor() ERC20("Ethereum Bassket Token", "XETF") {
          setDevFees();
          _mint(payable(owner()), 1000000000000000000);
          minted = 1;
@@ -79,20 +79,35 @@ contract BassketToken is ERC20, Ownable, ERC20Burnable {
         return price;
     }
     
+    
     function getBuybackPrice() public view returns(uint256 buybackPrice) {
         buybackPrice =  availableForBuyback.mul(1000000000).div(minted) ;
         return buybackPrice;
     }
     
     
-    function mintXEB() public payable {
+    function mintXEB() public payable returns(uint256 XEBMintedAmount){
         incomingValue = msg.value;
         toTokenDev = developerFee.fee.mul(msg.value).div(10**developerFee.decimals);
         toMint = incomingValue.sub(toTokenDev);
         payable(owner()).transfer(toTokenDev);
         mintedAmount = mint(msg.sender, toMint);
         minted = minted.add(mintedAmount);
+        XEBMintedAmount = mintedAmount;
         emit Minted(msg.sender, mintedAmount, toTokenDev, toMint);
+        return XEBMintedAmount;
+    }
+    
+    function mintToContract(address contractAddress) public payable returns(uint256 XEBMintedAmount){
+        incomingValue = msg.value;
+        toTokenDev = developerFee.fee.mul(msg.value).div(10**developerFee.decimals);
+        toMint = incomingValue.sub(toTokenDev);
+        payable(owner()).transfer(toTokenDev);
+        mintedAmount = mint(contractAddress, toMint);
+        minted = minted.add(mintedAmount);
+        XEBMintedAmount = mintedAmount;
+        emit Minted(contractAddress, mintedAmount, toTokenDev, toMint);
+        return XEBMintedAmount;
     }
     
     
