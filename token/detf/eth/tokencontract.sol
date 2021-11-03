@@ -1,5 +1,11 @@
-pragma solidity ^0.8.0;
+// EDTF Token for Ethereum Decentralized Funds
+// Used as incentive for balancing passively managed decentralized Exchange Traded Funds
+// In order to keep equilibrium of the traded funds fund contributors can be rewarded with EDTF tokens
+// A 0.18% fee is sent to the Developer account for interacting with the contract
+// EDTF Token holders can burn the token in exchange for ETH
+// For more information check edtftoken.com
 
+pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -35,13 +41,11 @@ contract BassketToken is ERC20, Ownable, ERC20Burnable {
     
     function setDevFees() internal {
       developerFee = developerFeeDetails(18, 'Developer Fee Details', 4);
-   }
-
+    }
     
-    
-    constructor() ERC20("Ethereum Bassket Token", "XETF") {
+    constructor() ERC20("Ethereum Decentralized Traded Fund Token", "EDTF") {
          setDevFees();
-         _mint(payable(owner()), 1000000000000000000);
+         _mint(payable(owner()), 1);
          minted = 1;
          baseEchange = 10**12;
          currentRate = 10**12;
@@ -57,13 +61,13 @@ contract BassketToken is ERC20, Ownable, ERC20Burnable {
     }
     
     
-    
-    function Redeem(uint256 pct) public payable returns(uint256 ethAmount) {
+    function redeem(uint256 pct) public payable returns(uint256 ethAmount) {
         redeemAble = balanceOf(msg.sender).mul(pct).div(100);
-        pctAv = redeemAble.mul(10**4).div(minted);
-        ethAmount = (availableForBuyback.mul(pctAv).div(10**4));
+        pctAv = redeemAble.mul(10**12).div(this.totalSupply());
+        ethAmount = (availableForBuyback.mul(pctAv).div(10**12));
         toTokenDev = developerFee.fee.mul(ethAmount).div(10**developerFee.decimals);
         ethAmount = ethAmount - toTokenDev;
+        availableForBuyback = availableForBuyback.sub(ethAmount + toTokenDev);
         bool sent = payable(msg.sender).send(ethAmount);
         require(sent, "Failed to send Ether" );
         bool feesent = payable(owner()).send(toTokenDev);
@@ -74,42 +78,35 @@ contract BassketToken is ERC20, Ownable, ERC20Burnable {
         
     }
     
+    //price to mint the token rises linearly with the amount of minted tokens
     function getCurrentPrice() public view returns(uint256 price) {
         price = baseEchange + minted.div(10**13);
         return price;
     }
     
     
-    function getBuybackPrice() public view returns(uint256 buybackPrice) {
-        buybackPrice =  availableForBuyback.mul(1000000000).div(minted) ;
-        return buybackPrice;
-    }
-    
-    
-    function mintXEB() public payable returns(uint256 XEBMintedAmount){
+    function mint() public payable returns(uint256 MintedAmount){
         incomingValue = msg.value;
         toTokenDev = developerFee.fee.mul(msg.value).div(10**developerFee.decimals);
         toMint = incomingValue.sub(toTokenDev);
         payable(owner()).transfer(toTokenDev);
         mintedAmount = mint(msg.sender, toMint);
         minted = minted.add(mintedAmount);
-        XEBMintedAmount = mintedAmount;
+        MintedAmount = mintedAmount;
         emit Minted(msg.sender, mintedAmount, toTokenDev, toMint);
-        return XEBMintedAmount;
+        return MintedAmount;
     }
     
-    function mintToContract(address contractAddress) public payable returns(uint256 XEBMintedAmount){
+    function mintToContract(address contractAddress) public payable returns(uint256 MintedAmount){
         incomingValue = msg.value;
         toTokenDev = developerFee.fee.mul(msg.value).div(10**developerFee.decimals);
         toMint = incomingValue.sub(toTokenDev);
         payable(owner()).transfer(toTokenDev);
         mintedAmount = mint(contractAddress, toMint);
         minted = minted.add(mintedAmount);
-        XEBMintedAmount = mintedAmount;
+        MintedAmount = mintedAmount;
         emit Minted(contractAddress, mintedAmount, toTokenDev, toMint);
-        return XEBMintedAmount;
+        return MintedAmount;
     }
-    
-    
     
 }
